@@ -162,12 +162,22 @@
 				<button
 					class="p-1 px-3 text-xs flex rounded-sm transition"
 					on:click={() => {
-						params.function_calling = (params?.function_calling ?? null) === null ? 'native' : null;
+					    if ((params?.function_calling ?? null) === null) {
+						    params.function_calling = 'native';
+						} else if (params.function_calling === 'native') {
+                            params.function_calling = 'legacy';
+                        } else if (params.function_calling === 'legacy') {
+                            params.function_calling = null;
+                        } else {
+                            params.function_calling = null;
+                        }
 					}}
 					type="button"
 				>
 					{#if params.function_calling === 'native'}
 						<span class="ml-2 self-center">{$i18n.t('Native')}</span>
+                    {:else if params.function_calling === 'legacy'}
+						<span class="ml-2 self-center">{$i18n.t('Legacy')}</span>
 					{:else}
 						<span class="ml-2 self-center">{$i18n.t('Default')}</span>
 					{/if}
