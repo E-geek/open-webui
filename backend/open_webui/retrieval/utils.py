@@ -1,5 +1,6 @@
 import logging
 import os
+import math
 from typing import Awaitable, Optional, Union
 
 import requests
@@ -49,6 +50,8 @@ from open_webui.config import (
     RAG_EMBEDDING_QUERY_PREFIX,
     RAG_EMBEDDING_CONTENT_PREFIX,
     RAG_EMBEDDING_PREFIX_FIELD_NAME,
+    RAG_SEARCH_MODE,
+    RAG_POINTWISE_OVERLAP,
 )
 
 log = logging.getLogger(__name__)
@@ -432,13 +435,18 @@ async def query_collection(
 ) -> dict:
     results = []
     error = False
+    count = k
+    if RAG_SEARCH_MODE.value == "redundant":
+        count = k
+    else:
+        count = math.ceil(k / len(queries)) + RAG_POINTWISE_OVERLAP.value
 
     def process_query_collection(collection_name, query_embedding):
         try:
             if collection_name:
                 result = query_doc(
                     collection_name=collection_name,
-                    k=k,
+                    k=count,
                     query_embedding=query_embedding,
                 )
                 if result is not None:

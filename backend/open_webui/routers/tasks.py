@@ -79,7 +79,10 @@ async def get_task_config(request: Request, user=Depends(get_verified_user)):
         "ENABLE_TITLE_GENERATION": request.app.state.config.ENABLE_TITLE_GENERATION,
         "ENABLE_SEARCH_QUERY_GENERATION": request.app.state.config.ENABLE_SEARCH_QUERY_GENERATION,
         "ENABLE_RETRIEVAL_QUERY_GENERATION": request.app.state.config.ENABLE_RETRIEVAL_QUERY_GENERATION,
+        "RAG_SEARCH_MODE": request.app.state.config.RAG_SEARCH_MODE,
+        "RAG_POINTWISE_OVERLAP": request.app.state.config.RAG_POINTWISE_OVERLAP,
         "QUERY_GENERATION_PROMPT_TEMPLATE": request.app.state.config.QUERY_GENERATION_PROMPT_TEMPLATE,
+        "QUERY_GENERATION_SEARCH_PROMPT_TEMPLATE": request.app.state.config.QUERY_GENERATION_SEARCH_PROMPT_TEMPLATE,
         "TOOLS_FUNCTION_CALLING_PROMPT_TEMPLATE": request.app.state.config.TOOLS_FUNCTION_CALLING_PROMPT_TEMPLATE,
         "VOICE_MODE_PROMPT_TEMPLATE": request.app.state.config.VOICE_MODE_PROMPT_TEMPLATE,
     }
@@ -99,7 +102,10 @@ class TaskConfigForm(BaseModel):
     ENABLE_TAGS_GENERATION: bool
     ENABLE_SEARCH_QUERY_GENERATION: bool
     ENABLE_RETRIEVAL_QUERY_GENERATION: bool
+    RAG_SEARCH_MODE: str
+    RAG_POINTWISE_OVERLAP: int
     QUERY_GENERATION_PROMPT_TEMPLATE: str
+    QUERY_GENERATION_SEARCH_PROMPT_TEMPLATE: str
     TOOLS_FUNCTION_CALLING_PROMPT_TEMPLATE: str
     VOICE_MODE_PROMPT_TEMPLATE: Optional[str]
 
@@ -144,8 +150,17 @@ async def update_task_config(
         form_data.ENABLE_RETRIEVAL_QUERY_GENERATION
     )
 
+    request.app.state.config.RAG_SEARCH_MODE = (
+        form_data.RAG_SEARCH_MODE
+    )
+    request.app.state.config.RAG_POINTWISE_OVERLAP = (
+        form_data.RAG_POINTWISE_OVERLAP
+    )
     request.app.state.config.QUERY_GENERATION_PROMPT_TEMPLATE = (
         form_data.QUERY_GENERATION_PROMPT_TEMPLATE
+    )
+    request.app.state.config.QUERY_GENERATION_SEARCH_PROMPT_TEMPLATE = (
+        form_data.QUERY_GENERATION_SEARCH_PROMPT_TEMPLATE
     )
     request.app.state.config.TOOLS_FUNCTION_CALLING_PROMPT_TEMPLATE = (
         form_data.TOOLS_FUNCTION_CALLING_PROMPT_TEMPLATE
@@ -169,7 +184,10 @@ async def update_task_config(
         "FOLLOW_UP_GENERATION_PROMPT_TEMPLATE": request.app.state.config.FOLLOW_UP_GENERATION_PROMPT_TEMPLATE,
         "ENABLE_SEARCH_QUERY_GENERATION": request.app.state.config.ENABLE_SEARCH_QUERY_GENERATION,
         "ENABLE_RETRIEVAL_QUERY_GENERATION": request.app.state.config.ENABLE_RETRIEVAL_QUERY_GENERATION,
+        "RAG_SEARCH_MODE": request.app.state.config.RAG_SEARCH_MODE,
+        "RAG_POINTWISE_OVERLAP": request.app.state.config.RAG_POINTWISE_OVERLAP,
         "QUERY_GENERATION_PROMPT_TEMPLATE": request.app.state.config.QUERY_GENERATION_PROMPT_TEMPLATE,
+        "QUERY_GENERATION_SEARCH_PROMPT_TEMPLATE": request.app.state.config.QUERY_GENERATION_SEARCH_PROMPT_TEMPLATE,
         "TOOLS_FUNCTION_CALLING_PROMPT_TEMPLATE": request.app.state.config.TOOLS_FUNCTION_CALLING_PROMPT_TEMPLATE,
         "VOICE_MODE_PROMPT_TEMPLATE": request.app.state.config.VOICE_MODE_PROMPT_TEMPLATE,
     }
@@ -521,10 +539,17 @@ async def generate_queries(
         f"generating {type} queries using model {task_model_id} for user {user.email}"
     )
 
-    if (request.app.state.config.QUERY_GENERATION_PROMPT_TEMPLATE).strip() != "":
-        template = request.app.state.config.QUERY_GENERATION_PROMPT_TEMPLATE
+    if type == "web_search":
+        template = (
+            request.app.state.config.QUERY_GENERATION_SEARCH_PROMPT_TEMPLATE.strip()
+            or request.app.state.config.QUERY_GENERATION_PROMPT_TEMPLATE.strip()
+            or DEFAULT_QUERY_GENERATION_PROMPT_TEMPLATE
+        )
     else:
-        template = DEFAULT_QUERY_GENERATION_PROMPT_TEMPLATE
+        template = (
+            request.app.state.config.QUERY_GENERATION_PROMPT_TEMPLATE.strip()
+            or DEFAULT_QUERY_GENERATION_PROMPT_TEMPLATE
+        )
 
     content = query_generation_template(template, form_data["messages"], user)
 

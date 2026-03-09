@@ -2023,6 +2023,24 @@ QUERY_GENERATION_PROMPT_TEMPLATE = PersistentConfig(
     os.environ.get("QUERY_GENERATION_PROMPT_TEMPLATE", ""),
 )
 
+QUERY_GENERATION_SEARCH_PROMPT_TEMPLATE = PersistentConfig(
+    "QUERY_GENERATION_SEARCH_PROMPT_TEMPLATE",
+    "task.query.search_prompt_template",
+    os.environ.get("QUERY_GENERATION_SEARCH_PROMPT_TEMPLATE", ""),
+)
+
+RAG_SEARCH_MODE = PersistentConfig(
+    "RAG_SEARCH_MODE",
+    "task.query.search_mode",
+    os.environ.get("RAG_SEARCH_MODE", "redundant"),
+)
+
+RAG_POINTWISE_OVERLAP = PersistentConfig(
+    "RAG_POINTWISE_OVERLAP",
+    "task.query.search_pointwise_overlap",
+    os.environ.get("RAG_POINTWISE_OVERLAP", "0"),
+)
+
 DEFAULT_QUERY_GENERATION_PROMPT_TEMPLATE = """### Task:
 Analyze the chat history to determine the necessity of generating search queries, in the given language. By default, **prioritize generating 1-3 broad and relevant search queries** unless it is absolutely certain that no additional information is required. The aim is to retrieve comprehensive, updated, and valuable information even with minimal uncertainty. If no search is unequivocally needed, return an empty list.
 
