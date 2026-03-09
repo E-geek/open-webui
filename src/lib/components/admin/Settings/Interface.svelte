@@ -29,7 +29,10 @@
 		ENABLE_TAGS_GENERATION: true,
 		ENABLE_SEARCH_QUERY_GENERATION: true,
 		ENABLE_RETRIEVAL_QUERY_GENERATION: true,
+		RAG_SEARCH_MODE: 'redundant',
+		RAG_POINTWISE_OVERLAP: 2,
 		QUERY_GENERATION_PROMPT_TEMPLATE: '',
+		QUERY_GENERATION_SEARCH_PROMPT_TEMPLATE: '',
 		TOOLS_FUNCTION_CALLING_PROMPT_TEMPLATE: '',
 		VOICE_MODE_PROMPT_TEMPLATE: ''
 	};
@@ -351,6 +354,76 @@
 							)}
 						/>
 					</Tooltip>
+				</div>
+
+				<div class="mb-2.5">
+					<div class=" mb-1 text-xs font-medium">{$i18n.t('Search Query Generation Prompt')}</div>
+
+					<Tooltip
+						content={$i18n.t('Leave empty to use the default prompt, or enter a custom prompt')}
+						placement="top-start"
+					>
+						<Textarea
+							bind:value={taskConfig.QUERY_GENERATION_SEARCH_PROMPT_TEMPLATE}
+							placeholder={$i18n.t(
+								'Leave empty to use the default prompt, or enter a custom prompt'
+							)}
+						/>
+					</Tooltip>
+				</div>
+
+				<div class=" mb-2.5 flex w-full gap-2">
+					<div class="flex-1">
+						<div class=" text-xs mb-1 flex">
+						    <div class=" mr-1">{$i18n.t('RAG Search Mode')}</div>
+                            <Tooltip
+                                content={$i18n.t(
+                                    `RAG_SEARCH_MODE: "redundant" (default) or "pointwise" <br/>
+                                         - "redundant": All queries retrieve up to the global max docs (default behavior)  <br/>
+                                         - "pointwise": The global max docs is divided by the number of queries (ceil), each query is limited to this value (+ overlap)`
+                                )}
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke-width="1.5"
+                                    stroke="currentColor"
+                                    class="size-3.5"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
+                                    />
+                                </svg>
+                            </Tooltip>
+                        </div>
+						<select
+							class="w-full rounded-lg py-2 px-4 text-sm bg-gray-50 dark:text-gray-300 dark:bg-gray-850 outline-hidden"
+							bind:value={taskConfig.RAG_SEARCH_MODE}
+							placeholder={$i18n.t('Select a rag search mode')}
+						>
+                            <option value="redundant" selected={taskConfig.RAG_SEARCH_MODE !== 'pointwise'} class="bg-gray-100 dark:bg-gray-700">
+                                {$i18n.t('Redundant')}
+                                {$i18n.t('(default)')}
+                            </option>
+                            <option value="pointwise" selected={taskConfig.RAG_SEARCH_MODE === 'pointwise'} class="bg-gray-100 dark:bg-gray-700">
+                                {$i18n.t('Pointwise')}
+                            </option>
+						</select>
+					</div>
+
+					<div class="flex-1">
+						<div class=" text-xs mb-1">{$i18n.t('Overlap for pointwise mode')}</div>
+						<input
+                            type="number"
+                            disabled={taskConfig.RAG_SEARCH_MODE !== 'pointwise'}
+                            class="w-full rounded-lg py-2 px-4 text-sm bg-gray-50 dark:text-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed dark:bg-gray-850 outline-hidden"
+                            bind:value={taskConfig.RAG_POINTWISE_OVERLAP}
+                            placeholder={$i18n.t('Overlap for pointwise mode')}
+                        />
+					</div>
 				</div>
 
 				<div class="mb-2.5 flex w-full items-center justify-between">

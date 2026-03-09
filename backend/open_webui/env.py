@@ -935,6 +935,23 @@ PIP_PACKAGE_INDEX_OPTIONS = os.getenv('PIP_PACKAGE_INDEX_OPTIONS', '').split()
 EXTERNAL_PWA_MANIFEST_URL = os.environ.get('EXTERNAL_PWA_MANIFEST_URL')
 
 ####################################
+# RAG SEARCH OPTIONS
+####################################
+# RAG_SEARCH_MODE: "redundant" (default) or "pointwise"
+#   - "redundant": All queries retrieve up to the global max docs (default behavior)
+#   - "pointwise": The global max docs is divided by the number of queries (ceil), each query is limited to this value (+ overlap)
+RAG_SEARCH_MODE = os.environ.get("RAG_SEARCH_MODE", "redundant").lower()
+
+# RAG_POINTWISE_OVERLAP: Number of extra documents to fetch per query in pointwise mode
+#   - Only used when RAG_SEARCH_MODE is "pointwise"
+#   - Example: If max docs = 10, queries = 5, overlap = 3, each query fetches up to 5 docs (2 + 3)
+RAG_POINTWISE_OVERLAP = os.environ.get("RAG_POINTWISE_OVERLAP", "0")
+try:
+    RAG_POINTWISE_OVERLAP = int(RAG_POINTWISE_OVERLAP)
+except Exception:
+    RAG_POINTWISE_OVERLAP = 0
+
+####################################
 # GROUP DEFAULTS
 ####################################
 
