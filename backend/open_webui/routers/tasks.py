@@ -136,9 +136,12 @@ async def update_task_config(request: Request, form_data: TaskConfigForm, user=D
     request.app.state.config.RAG_POINTWISE_OVERLAP = (
         form_data.RAG_POINTWISE_OVERLAP
     )
-    request.app.state.config.QUERY_GENERATION_PROMPT_TEMPLATE = form_data.QUERY_GENERATION_PROMPT_TEMPLATE
-    request.app.state.config.TOOLS_FUNCTION_CALLING_PROMPT_TEMPLATE = form_data.TOOLS_FUNCTION_CALLING_PROMPT_TEMPLATE
-
+    request.app.state.config.QUERY_GENERATION_PROMPT_TEMPLATE = (
+        form_data.QUERY_GENERATION_PROMPT_TEMPLATE
+    )
+    request.app.state.config.QUERY_GENERATION_SEARCH_PROMPT_TEMPLATE = (
+        form_data.QUERY_GENERATION_SEARCH_PROMPT_TEMPLATE
+    )
     request.app.state.config.TOOLS_FUNCTION_CALLING_PROMPT_TEMPLATE = (
         form_data.TOOLS_FUNCTION_CALLING_PROMPT_TEMPLATE
     )
