@@ -18,7 +18,7 @@ from open_webui.utils.task import (
     moa_response_generation_template,
 )
 from open_webui.utils.auth import get_admin_user, get_verified_user
-from open_webui.constants import TASKS
+from open_webui.constants import ERROR_MESSAGES, TASKS
 
 from open_webui.routers.pipelines import process_pipeline_inlet_filter
 
@@ -82,6 +82,7 @@ async def get_task_config(request: Request, user=Depends(get_verified_user)):
         'QUERY_GENERATION_PROMPT_TEMPLATE': request.app.state.config.QUERY_GENERATION_PROMPT_TEMPLATE,
         'QUERY_GENERATION_SEARCH_PROMPT_TEMPLATE': request.app.state.config.QUERY_GENERATION_SEARCH_PROMPT_TEMPLATE,
         'TOOLS_FUNCTION_CALLING_PROMPT_TEMPLATE': request.app.state.config.TOOLS_FUNCTION_CALLING_PROMPT_TEMPLATE,
+        'ENABLE_VOICE_MODE_PROMPT': request.app.state.config.ENABLE_VOICE_MODE_PROMPT,
         'VOICE_MODE_PROMPT_TEMPLATE': request.app.state.config.VOICE_MODE_PROMPT_TEMPLATE,
     }
 
@@ -105,6 +106,7 @@ class TaskConfigForm(BaseModel):
     QUERY_GENERATION_PROMPT_TEMPLATE: str
     QUERY_GENERATION_SEARCH_PROMPT_TEMPLATE: str
     TOOLS_FUNCTION_CALLING_PROMPT_TEMPLATE: str
+    ENABLE_VOICE_MODE_PROMPT: bool
     VOICE_MODE_PROMPT_TEMPLATE: Optional[str]
 
 
@@ -146,6 +148,7 @@ async def update_task_config(request: Request, form_data: TaskConfigForm, user=D
         form_data.TOOLS_FUNCTION_CALLING_PROMPT_TEMPLATE
     )
 
+    request.app.state.config.ENABLE_VOICE_MODE_PROMPT = form_data.ENABLE_VOICE_MODE_PROMPT
     request.app.state.config.VOICE_MODE_PROMPT_TEMPLATE = form_data.VOICE_MODE_PROMPT_TEMPLATE
 
     return {
@@ -167,6 +170,7 @@ async def update_task_config(request: Request, form_data: TaskConfigForm, user=D
         'QUERY_GENERATION_PROMPT_TEMPLATE': request.app.state.config.QUERY_GENERATION_PROMPT_TEMPLATE,
         'QUERY_GENERATION_SEARCH_PROMPT_TEMPLATE': request.app.state.config.QUERY_GENERATION_SEARCH_PROMPT_TEMPLATE,
         'TOOLS_FUNCTION_CALLING_PROMPT_TEMPLATE': request.app.state.config.TOOLS_FUNCTION_CALLING_PROMPT_TEMPLATE,
+        'ENABLE_VOICE_MODE_PROMPT': request.app.state.config.ENABLE_VOICE_MODE_PROMPT,
         'VOICE_MODE_PROMPT_TEMPLATE': request.app.state.config.VOICE_MODE_PROMPT_TEMPLATE,
     }
 
@@ -181,6 +185,7 @@ async def generate_title(request: Request, form_data: dict, user=Depends(get_ver
 
     if getattr(request.state, 'direct', False) and hasattr(request.state, 'model'):
         models = {
+            **request.app.state.MODELS,
             request.state.model['id']: request.state.model,
         }
     else:
@@ -190,7 +195,7 @@ async def generate_title(request: Request, form_data: dict, user=Depends(get_ver
     if model_id not in models:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail='Model not found',
+            detail=ERROR_MESSAGES.MODEL_NOT_FOUND(),
         )
 
     # Check if the user has a custom task model
@@ -209,7 +214,7 @@ async def generate_title(request: Request, form_data: dict, user=Depends(get_ver
     else:
         template = DEFAULT_TITLE_GENERATION_PROMPT_TEMPLATE
 
-    content = title_generation_template(template, form_data['messages'], user)
+    content = await title_generation_template(template, form_data['messages'], user)
 
     max_tokens = models[task_model_id].get('info', {}).get('params', {}).get('max_tokens', 1000)
 
@@ -258,6 +263,7 @@ async def generate_follow_ups(request: Request, form_data: dict, user=Depends(ge
 
     if getattr(request.state, 'direct', False) and hasattr(request.state, 'model'):
         models = {
+            **request.app.state.MODELS,
             request.state.model['id']: request.state.model,
         }
     else:
@@ -267,7 +273,7 @@ async def generate_follow_ups(request: Request, form_data: dict, user=Depends(ge
     if model_id not in models:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail='Model not found',
+            detail=ERROR_MESSAGES.MODEL_NOT_FOUND(),
         )
 
     # Check if the user has a custom task model
@@ -286,7 +292,7 @@ async def generate_follow_ups(request: Request, form_data: dict, user=Depends(ge
     else:
         template = DEFAULT_FOLLOW_UP_GENERATION_PROMPT_TEMPLATE
 
-    content = follow_up_generation_template(template, form_data['messages'], user)
+    content = await follow_up_generation_template(template, form_data['messages'], user)
 
     payload = {
         'model': task_model_id,
@@ -326,6 +332,7 @@ async def generate_chat_tags(request: Request, form_data: dict, user=Depends(get
 
     if getattr(request.state, 'direct', False) and hasattr(request.state, 'model'):
         models = {
+            **request.app.state.MODELS,
             request.state.model['id']: request.state.model,
         }
     else:
@@ -335,7 +342,7 @@ async def generate_chat_tags(request: Request, form_data: dict, user=Depends(get
     if model_id not in models:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail='Model not found',
+            detail=ERROR_MESSAGES.MODEL_NOT_FOUND(),
         )
 
     # Check if the user has a custom task model
@@ -354,7 +361,7 @@ async def generate_chat_tags(request: Request, form_data: dict, user=Depends(get
     else:
         template = DEFAULT_TAGS_GENERATION_PROMPT_TEMPLATE
 
-    content = tags_generation_template(template, form_data['messages'], user)
+    content = await tags_generation_template(template, form_data['messages'], user)
 
     payload = {
         'model': task_model_id,
@@ -388,6 +395,7 @@ async def generate_chat_tags(request: Request, form_data: dict, user=Depends(get
 async def generate_image_prompt(request: Request, form_data: dict, user=Depends(get_verified_user)):
     if getattr(request.state, 'direct', False) and hasattr(request.state, 'model'):
         models = {
+            **request.app.state.MODELS,
             request.state.model['id']: request.state.model,
         }
     else:
@@ -397,7 +405,7 @@ async def generate_image_prompt(request: Request, form_data: dict, user=Depends(
     if model_id not in models:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail='Model not found',
+            detail=ERROR_MESSAGES.MODEL_NOT_FOUND(),
         )
 
     # Check if the user has a custom task model
@@ -416,7 +424,7 @@ async def generate_image_prompt(request: Request, form_data: dict, user=Depends(
     else:
         template = DEFAULT_IMAGE_PROMPT_GENERATION_PROMPT_TEMPLATE
 
-    content = image_prompt_generation_template(template, form_data['messages'], user)
+    content = await image_prompt_generation_template(template, form_data['messages'], user)
 
     payload = {
         'model': task_model_id,
@@ -453,13 +461,13 @@ async def generate_queries(request: Request, form_data: dict, user=Depends(get_v
         if not request.app.state.config.ENABLE_SEARCH_QUERY_GENERATION:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f'Search query generation is disabled',
+                detail=ERROR_MESSAGES.FEATURE_DISABLED('Search query generation'),
             )
     elif type == 'retrieval':
         if not request.app.state.config.ENABLE_RETRIEVAL_QUERY_GENERATION:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f'Query generation is disabled',
+                detail=ERROR_MESSAGES.FEATURE_DISABLED('Query generation'),
             )
 
     if getattr(request.state, 'cached_queries', None):
@@ -468,6 +476,7 @@ async def generate_queries(request: Request, form_data: dict, user=Depends(get_v
 
     if getattr(request.state, 'direct', False) and hasattr(request.state, 'model'):
         models = {
+            **request.app.state.MODELS,
             request.state.model['id']: request.state.model,
         }
     else:
@@ -477,7 +486,7 @@ async def generate_queries(request: Request, form_data: dict, user=Depends(get_v
     if model_id not in models:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail='Model not found',
+            detail=ERROR_MESSAGES.MODEL_NOT_FOUND(),
         )
 
     # Check if the user has a custom task model
@@ -503,7 +512,7 @@ async def generate_queries(request: Request, form_data: dict, user=Depends(get_v
             or DEFAULT_QUERY_GENERATION_PROMPT_TEMPLATE
         )
 
-    content = query_generation_template(template, form_data['messages'], user)
+    content = await query_generation_template(template, form_data['messages'], user)
 
     payload = {
         'model': task_model_id,
@@ -537,7 +546,7 @@ async def generate_autocompletion(request: Request, form_data: dict, user=Depend
     if not request.app.state.config.ENABLE_AUTOCOMPLETE_GENERATION:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f'Autocompletion generation is disabled',
+            detail=ERROR_MESSAGES.FEATURE_DISABLED('Autocompletion generation'),
         )
 
     type = form_data.get('type')
@@ -548,11 +557,12 @@ async def generate_autocompletion(request: Request, form_data: dict, user=Depend
         if len(prompt) > request.app.state.config.AUTOCOMPLETE_GENERATION_INPUT_MAX_LENGTH:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f'Input prompt exceeds maximum length of {request.app.state.config.AUTOCOMPLETE_GENERATION_INPUT_MAX_LENGTH}',
+                detail=ERROR_MESSAGES.INPUT_TOO_LONG(request.app.state.config.AUTOCOMPLETE_GENERATION_INPUT_MAX_LENGTH),
             )
 
     if getattr(request.state, 'direct', False) and hasattr(request.state, 'model'):
         models = {
+            **request.app.state.MODELS,
             request.state.model['id']: request.state.model,
         }
     else:
@@ -562,7 +572,7 @@ async def generate_autocompletion(request: Request, form_data: dict, user=Depend
     if model_id not in models:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail='Model not found',
+            detail=ERROR_MESSAGES.MODEL_NOT_FOUND(),
         )
 
     # Check if the user has a custom task model
@@ -581,7 +591,7 @@ async def generate_autocompletion(request: Request, form_data: dict, user=Depend
     else:
         template = DEFAULT_AUTOCOMPLETE_GENERATION_PROMPT_TEMPLATE
 
-    content = autocomplete_generation_template(template, prompt, messages, type, user)
+    content = await autocomplete_generation_template(template, prompt, messages, type, user)
 
     payload = {
         'model': task_model_id,
@@ -615,6 +625,7 @@ async def generate_autocompletion(request: Request, form_data: dict, user=Depend
 async def generate_emoji(request: Request, form_data: dict, user=Depends(get_verified_user)):
     if getattr(request.state, 'direct', False) and hasattr(request.state, 'model'):
         models = {
+            **request.app.state.MODELS,
             request.state.model['id']: request.state.model,
         }
     else:
@@ -624,7 +635,7 @@ async def generate_emoji(request: Request, form_data: dict, user=Depends(get_ver
     if model_id not in models:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail='Model not found',
+            detail=ERROR_MESSAGES.MODEL_NOT_FOUND(),
         )
 
     # Check if the user has a custom task model
@@ -640,7 +651,7 @@ async def generate_emoji(request: Request, form_data: dict, user=Depends(get_ver
 
     template = DEFAULT_EMOJI_GENERATION_PROMPT_TEMPLATE
 
-    content = emoji_generation_template(template, form_data['prompt'], user)
+    content = await emoji_generation_template(template, form_data['prompt'], user)
 
     payload = {
         'model': task_model_id,
@@ -680,6 +691,7 @@ async def generate_emoji(request: Request, form_data: dict, user=Depends(get_ver
 async def generate_moa_response(request: Request, form_data: dict, user=Depends(get_verified_user)):
     if getattr(request.state, 'direct', False) and hasattr(request.state, 'model'):
         models = {
+            **request.app.state.MODELS,
             request.state.model['id']: request.state.model,
         }
     else:
@@ -690,7 +702,7 @@ async def generate_moa_response(request: Request, form_data: dict, user=Depends(
     if model_id not in models:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail='Model not found',
+            detail=ERROR_MESSAGES.MODEL_NOT_FOUND(),
         )
 
     template = DEFAULT_MOA_GENERATION_PROMPT_TEMPLATE
