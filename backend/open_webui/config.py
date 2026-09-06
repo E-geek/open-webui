@@ -2314,10 +2314,16 @@ ENABLE_TITLE_GENERATION = os.getenv('ENABLE_TITLE_GENERATION', 'True').lower() =
 
 ENABLE_SEARCH_QUERY_GENERATION = os.getenv('ENABLE_SEARCH_QUERY_GENERATION', 'True').lower() == 'true'
 
+RAG_SEARCH_MODE = os.getenv('RAG_SEARCH_MODE', 'redundant')
+
+RAG_POINTWISE_OVERLAP = int(os.getenv('RAG_POINTWISE_OVERLAP', '0').strip() or '0')
+
 ENABLE_RETRIEVAL_QUERY_GENERATION = os.getenv('ENABLE_RETRIEVAL_QUERY_GENERATION', 'True').lower() == 'true'
 
 
 QUERY_GENERATION_PROMPT_TEMPLATE = os.getenv('QUERY_GENERATION_PROMPT_TEMPLATE', '')
+
+QUERY_GENERATION_SEARCH_PROMPT_TEMPLATE = os.getenv('QUERY_GENERATION_SEARCH_PROMPT_TEMPLATE', '')
 
 DEFAULT_QUERY_GENERATION_PROMPT_TEMPLATE = """### Task:
 Analyze the chat history to determine the necessity of generating search queries, in the given language. By default, **prioritize generating 1-3 broad and relevant search queries** unless it is absolutely certain that no additional information is required. The aim is to retrieve comprehensive, updated, and valuable information even with minimal uncertainty. If no search is unequivocally needed, return an empty list.
@@ -3150,8 +3156,11 @@ DEFAULT_CONFIG = {
     'task.tags.enable': ENABLE_TAGS_GENERATION,
     'task.title.enable': ENABLE_TITLE_GENERATION,
     'task.query.search.enable': ENABLE_SEARCH_QUERY_GENERATION,
+    'task.query.search_mode': RAG_SEARCH_MODE,
+    'task.query.search_pointwise_overlap': RAG_POINTWISE_OVERLAP,
     'task.query.retrieval.enable': ENABLE_RETRIEVAL_QUERY_GENERATION,
     'task.query.prompt_template': QUERY_GENERATION_PROMPT_TEMPLATE,
+    'task.query.search_prompt_template': QUERY_GENERATION_SEARCH_PROMPT_TEMPLATE,
     'task.autocomplete.enable': ENABLE_AUTOCOMPLETE_GENERATION,
     'task.autocomplete.input_max_length': AUTOCOMPLETE_GENERATION_INPUT_MAX_LENGTH,
     'task.autocomplete.prompt_template': AUTOCOMPLETE_GENERATION_PROMPT_TEMPLATE,

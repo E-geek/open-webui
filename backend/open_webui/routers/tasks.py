@@ -443,11 +443,16 @@ async def generate_queries(request: Request, form_data: dict, user=Depends(get_v
     log.debug('generating %s queries using model %s for user %s', type, task_model_id, user.email)
 
     query_template = await Config.get('task.query.prompt_template')
-    if query_template.strip() != '':
-        template = query_template
+
+    if type == 'web_search':
+        template = (
+            request.app.state.config.QUERY_GENERATION_SEARCH_PROMPT_TEMPLATE.strip()
+            or query_template.strip()
+            or DEFAULT_QUERY_GENERATION_PROMPT_TEMPLATE
+        )
     else:
         template = (
-            request.app.state.config.QUERY_GENERATION_PROMPT_TEMPLATE.strip()
+            query_template.strip()
             or DEFAULT_QUERY_GENERATION_PROMPT_TEMPLATE
         )
 

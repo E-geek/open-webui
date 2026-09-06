@@ -496,7 +496,7 @@
 
 				<AdminSettingField
 					label={$i18n.t('Query Generation Prompt')}
-					description={$i18n.t('Shared prompt for retrieval and web-search query rewriting.')}
+					description={$i18n.t('Shared prompt for retrieval and web-search query rewriting when web-search prompt is empty.')}
 				>
 					<Textarea
 						className={textareaClass}
@@ -506,30 +506,24 @@
 				</AdminSettingField>
 
 				<AdminSettingField
+					label={$i18n.t('Web Search Generation Prompt')}
+					description={$i18n.t('For web-search query rewriting.')}
+				>
+					<Textarea
+						className={textareaClass}
+						bind:value={taskConfig.QUERY_GENERATION_SEARCH_PROMPT_TEMPLATE}
+						placeholder={$i18n.t('Leave empty to use the default prompt, or enter a custom prompt')}
+					/>
+				</AdminSettingField>
+
+				<AdminSettingField
 				    label={$i18n.t('RAG Search Mode')}
+				    description={$i18n.t(
+                        `RAG_SEARCH_MODE: "redundant" (default) or "pointwise" <br/>
+                             - "redundant": All queries retrieve up to the global max docs (default behavior)  <br/>
+                             - "pointwise": The global max docs is divided by the number of queries (ceil), each query is limited to this value (+ overlap)`
+                    )}
                 >
-                    <Tooltip
-                        content={$i18n.t(
-                            `RAG_SEARCH_MODE: "redundant" (default) or "pointwise" <br/>
-                                 - "redundant": All queries retrieve up to the global max docs (default behavior)  <br/>
-                                 - "pointwise": The global max docs is divided by the number of queries (ceil), each query is limited to this value (+ overlap)`
-                        )}
-                    >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke-width="1.5"
-                            stroke="currentColor"
-                            class="size-3.5"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
-                            />
-                        </svg>
-                    </Tooltip>
                     <select
                         class="w-full rounded-lg py-2 px-4 text-sm bg-gray-50 dark:text-gray-300 dark:bg-gray-850 outline-hidden"
                         bind:value={taskConfig.RAG_SEARCH_MODE}
