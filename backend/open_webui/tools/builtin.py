@@ -28,7 +28,7 @@ from open_webui.models.memories import Memories
 from open_webui.models.messages import Message, Messages
 from open_webui.models.notes import Notes
 from open_webui.models.users import UserModel
-from open_webui.retrieval.utils import get_content_from_url
+from open_webui.retrieval.utils import get_content_from_url, get_document_size_from_url
 from open_webui.retrieval.vector.async_client import ASYNC_VECTOR_DB_CLIENT
 from open_webui.routers.images import (
     CreateImageForm,
@@ -297,8 +297,9 @@ async def search_web(
     __user__: dict = None,
 ) -> str:
     """
-    Search the public web for information. Best for current events, external references,
-    or topics not covered in internal documents.
+    Searches the public web for information.
+     • The tool does **not** retrieve the full content of the pages, so any description or snippet that accompanies a link should be treated with caution.
+     • To retrieve the full text of a relevant document, use **fetch_url** or fetch it yourself with a Bash/Python script.
 
     :param query: The search query to look up
     :param count: Number of results to return (default: admin-configured value)
@@ -359,6 +360,27 @@ async def fetch_url(
     except Exception as e:
         log.warning(f'fetch_url error: {e}')
         return JSONCodec.dumps({'error': str(e)})
+
+
+async def fetch_doc_size(
+    url: str,
+    __request__: Request = None,
+    __user__: dict = None,
+) -> int:
+    """
+    Get the size of a document without downloading its content.
+
+    :param url: The URL of the document
+    :return: The document size in bytes, or -1 if it is unavailable
+    """
+    if __request__ is None:
+        return -1
+
+    try:
+        return await get_document_size_from_url(url)
+    except Exception as e:
+        log.warning(f'fetch_doc_size error: {e}')
+        return -1
 
 
 # =============================================================================

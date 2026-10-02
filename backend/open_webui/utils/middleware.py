@@ -470,14 +470,14 @@ def get_citation_source_from_tool_result(
                 }
             ]
 
-        elif tool_name == 'fetch_url':
+        elif tool_name in ('fetch_url', 'fetch_doc_size'):
             url = tool_params.get('url', '')
             content = tool_result if isinstance(tool_result, str) else str(tool_result)
             snippet = content[:500] + ('...' if len(content) > 500 else '')
 
             return [
                 {
-                    'source': {'name': url or 'fetch_url', 'id': url or 'fetch_url'},
+                    'source': {'name': url or tool_name, 'id': url or tool_name},
                     'document': [snippet],
                     'metadata': [
                         {
@@ -5774,6 +5774,7 @@ async def streaming_chat_response_handler(response, ctx):
                             in [
                                 'search_web',
                                 'fetch_url',
+                                'fetch_doc_size',
                                 'view_file',
                                 'view_knowledge_file',
                                 'query_knowledge_files',

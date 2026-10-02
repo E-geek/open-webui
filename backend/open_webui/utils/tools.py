@@ -57,6 +57,7 @@ from open_webui.tools.builtin import (
     delete_memory,
     edit_image,
     execute_code,
+    fetch_doc_size,
     fetch_url,
     generate_image,
     get_current_timestamp,
@@ -682,7 +683,7 @@ async def get_builtin_tools(
         and features.get('web_search')
         and await has_user_permission('web_search')
     ):
-        builtin_functions.extend([search_web, fetch_url])
+        builtin_functions.extend([search_web, fetch_url, fetch_doc_size])
 
     # Add image generation/edit tools if builtin category enabled,
     # globally enabled, and allowed by model capability.

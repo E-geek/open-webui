@@ -242,6 +242,38 @@ async def get_content_from_url(request, url: str) -> str:
     return await asyncio.to_thread(_get_content_from_url_sync, request, url, loader_config)
 
 
+async def get_document_size_from_url(url: str) -> int:
+    return await asyncio.to_thread(_get_document_size_from_url_sync, url)
+
+
+def _get_document_size_from_url_sync(url: str) -> int:
+    from open_webui.retrieval.web.utils import get_ssrf_safe_requests_session, validate_url
+
+    validate_url(url)
+
+    response = None
+    try:
+        session = get_ssrf_safe_requests_session()
+        response = session.head(
+            url,
+            timeout=30,
+            allow_redirects=AIOHTTP_CLIENT_ALLOW_REDIRECTS,
+            headers={'Accept-Encoding': 'identity'},
+        )
+        response.raise_for_status()
+
+        try:
+            size = int(response.headers.get('Content-Length', ''))
+            return size if size >= 0 else -1
+        except ValueError:
+            return -1
+    except Exception:
+        return -1
+    finally:
+        if response is not None:
+            response.close()
+
+
 def _get_content_from_url_sync(request, url: str, loader_config):
     from open_webui.retrieval.web.utils import validate_url, get_ssrf_safe_requests_session
 
