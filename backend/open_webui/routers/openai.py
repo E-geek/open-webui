@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 import asyncio
 import hashlib
 import logging
@@ -324,6 +325,32 @@ async def get_openai_runtime_config() -> tuple[bool, list[str], list[str], dict]
         values.get('openai.api_configs') or {},
     )
 
+def merge_openai_config_with_user(config_tuple, user):
+    enable_openai_api, api_base_urls, api_keys, api_configs = config_tuple
+    new_api_base_urls = list(api_base_urls) if api_base_urls else []
+    new_api_keys = list(api_keys) if api_keys else []
+    new_api_configs = deepcopy(api_configs) if api_configs else {}
+
+    if user is None or not hasattr(user, 'settings') or not hasattr(user.settings, 'ui'):
+        return enable_openai_api, new_api_base_urls, new_api_keys, new_api_configs
+
+    direct_config = user.settings.ui.get('directConnections')
+    if direct_config:
+        direct_api_base_urls = direct_config.get('OPENAI_API_BASE_URLS', [])
+        direct_api_keys = direct_config.get('OPENAI_API_KEYS', [])
+        direct_api_configs = direct_config.get('OPENAI_API_CONFIGS', {})
+        if (len(direct_api_base_urls) == len(direct_api_keys)
+            and len(direct_api_configs) == len(direct_api_keys)
+            and len(direct_api_configs) > 0):
+            for idx, direct_api_base_url in enumerate(direct_api_base_urls):
+                config = direct_api_configs.get(str(idx))
+                if not config:
+                    continue
+                new_api_base_urls.append(direct_api_base_url)
+                new_api_keys.append(direct_api_keys[idx])
+                config_id = str(len(new_api_configs))
+                new_api_configs[config_id] = deepcopy(config)
+    return enable_openai_api, new_api_base_urls, new_api_keys, new_api_configs
 
 async def normalize_openai_api_keys(api_base_urls: list[str], api_keys: list[str]) -> list[str]:
     if len(api_keys) > len(api_base_urls):
@@ -335,8 +362,9 @@ async def normalize_openai_api_keys(api_base_urls: list[str], api_keys: list[str
     return api_keys
 
 
-async def get_openai_connection(idx: int) -> tuple[str, str, dict]:
-    _, api_base_urls, api_keys, api_configs = await get_openai_runtime_config()
+async def get_openai_connection(idx: int, user) -> tuple[str, str, dict]:
+    runtime_config = await get_openai_runtime_config()
+    _, api_base_urls, api_keys, api_configs = merge_openai_config_with_user(runtime_config, user)
     url = api_base_urls[idx]
     key = api_keys[idx]
     api_config = api_configs.get(str(idx), api_configs.get(url, {}))
@@ -357,12 +385,12 @@ async def clear_openai_model_cache(request: Request):
         request.app.state.MODELS = {}
 
 
-async def get_model_management_connection(url_idx: int) -> tuple[str, str, dict, str]:
+async def get_model_management_connection(url_idx: int, user) -> tuple[str, str, dict, str]:
     if not await Config.get('openai.enable'):
         raise HTTPException(status_code=503, detail='OpenAI API is disabled')
 
     try:
-        url, key, api_config = await get_openai_connection(url_idx)
+        url, key, api_config = await get_openai_connection(url_idx, user)
     except IndexError:
         raise HTTPException(status_code=404, detail='Connection not found')
 
@@ -403,7 +431,7 @@ async def send_model_management_request(
     stream: bool = False,
     user: UserModel | None = None,
 ):
-    root_url, key, api_config, provider = await get_model_management_connection(url_idx)
+    root_url, key, api_config, provider = await get_model_management_connection(url_idx, user)
     path = get_model_management_path(provider, operation, path_params=path_params)
     payload = get_model_management_payload(provider, operation, payload)
     headers, cookies = await get_headers_and_cookies(request, root_url, key, api_config, user=user)
@@ -475,7 +503,7 @@ async def get_anthropic_request_target(request: Request, form_data: dict, user: 
     if not model or 'urlIdx' not in model:
         raise HTTPException(status_code=404, detail=ERROR_MESSAGES.MODEL_NOT_FOUND())
 
-    url, key, api_config = await get_openai_connection(model['urlIdx'])
+    url, key, api_config = await get_openai_connection(model['urlIdx'], user)
     prefix_id = api_config.get('prefix_id')
     payload['model'] = strip_provider_model_prefix(payload['model'], prefix_id)
 
@@ -607,7 +635,9 @@ async def speech(request: Request, user=Depends(get_verified_user)):
 
     idx = None
     try:
-        _, api_base_urls, _, _ = await get_openai_runtime_config()
+        runtime_config = await get_openai_runtime_config()
+        _, api_base_urls, _, _ = merge_openai_config_with_user(runtime_config, user)
+
         idx = api_base_urls.index('https://api.openai.com/v1')
 
         body = await request.body()
@@ -622,7 +652,7 @@ async def speech(request: Request, user=Depends(get_verified_user)):
         if file_path.is_file():
             return FileResponse(file_path)
 
-        url, key, api_config = await get_openai_connection(idx)
+        url, key, api_config = await get_openai_connection(idx, user)
 
         headers, cookies = await get_headers_and_cookies(request, url, key, api_config, user=user)
 
@@ -674,7 +704,8 @@ async def speech(request: Request, user=Depends(get_verified_user)):
 
 
 async def get_all_models_responses(request: Request, user: UserModel) -> list:
-    enable_openai_api, api_base_urls, api_keys, api_configs = await get_openai_runtime_config()
+    runtime_config = await get_openai_runtime_config()
+    enable_openai_api, api_base_urls, api_keys, api_configs = merge_openai_config_with_user(runtime_config, user)
     if not enable_openai_api:
         return []
 
@@ -794,9 +825,11 @@ async def get_filtered_models(models, user, db=None):
     key_builder=lambda _func, request, user=None: f'openai_all_models_{user.id}' if user else 'openai_all_models',
 )
 async def get_all_models(request: Request, user: UserModel) -> dict[str, list]:
-    log.info('get_all_models()')
+    log.info('openai::get_all_models()')
 
-    enable_openai_api, api_base_urls, _, api_configs = await get_openai_runtime_config()
+    runtime_config = await get_openai_runtime_config()
+    enable_openai_api, api_base_urls, _, api_configs = merge_openai_config_with_user(runtime_config, user)
+
     if not enable_openai_api:
         request.app.state.OPENAI_MODELS = {}
         return {'data': []}
@@ -877,7 +910,7 @@ async def get_models(request: Request, url_idx: int | None = None, user=Depends(
     if url_idx is None:
         models = await get_all_models(request, user=user)
     else:
-        url, key, api_config = await get_openai_connection(url_idx)
+        url, key, api_config = await get_openai_connection(url_idx, user)
 
         r = None
         async with aiohttp.ClientSession(
@@ -958,7 +991,7 @@ async def download_provider_model(
     form_data: ProviderModelOperationForm,
     user=Depends(get_admin_user),
 ):
-    root_url, _, api_config, provider = await get_model_management_connection(url_idx)
+    root_url, _, api_config, provider = await get_model_management_connection(url_idx, user)
     payload = form_data.model_dump(exclude_none=True)
     payload['model'] = strip_provider_model_prefix(payload['model'], api_config.get('prefix_id'))
 
@@ -997,7 +1030,7 @@ async def load_provider_model(
     form_data: ProviderModelOperationForm,
     user=Depends(get_admin_user),
 ):
-    _, _, api_config, _ = await get_model_management_connection(url_idx)
+    _, _, api_config, _ = await get_model_management_connection(url_idx, user)
     payload = form_data.model_dump(exclude_none=True)
     payload['model'] = strip_provider_model_prefix(payload['model'], api_config.get('prefix_id'))
 
@@ -1013,7 +1046,7 @@ async def unload_provider_model(
     form_data: ProviderModelOperationForm,
     user=Depends(get_admin_user),
 ):
-    _, _, api_config, _ = await get_model_management_connection(url_idx)
+    _, _, api_config, _ = await get_model_management_connection(url_idx, user)
     payload = form_data.model_dump(exclude_none=True)
     payload['model'] = strip_provider_model_prefix(payload['model'], api_config.get('prefix_id'))
 
@@ -1034,7 +1067,7 @@ async def delete_provider_model(
     model: str,
     user=Depends(get_admin_user),
 ):
-    root_url, _, api_config, provider = await get_model_management_connection(url_idx)
+    root_url, _, api_config, provider = await get_model_management_connection(url_idx, user)
     actual_model = strip_provider_model_prefix(model, api_config.get('prefix_id'))
 
     result = await send_model_management_request(
@@ -1551,7 +1584,7 @@ async def generate_chat_completion(
             detail=ERROR_MESSAGES.MODEL_NOT_FOUND(),
         )
 
-    url, key, api_config = await get_openai_connection(idx)
+    url, key, api_config = await get_openai_connection(idx, user)
 
     prefix_id = api_config.get('prefix_id', None)
     payload['model'] = strip_provider_model_prefix(payload['model'], prefix_id)
@@ -1779,7 +1812,7 @@ async def embeddings(request: Request, form_data: dict, user):
     if model_id in models:
         idx = models[model_id]['urlIdx']
 
-    url, key, api_config = await get_openai_connection(idx)
+    url, key, api_config = await get_openai_connection(idx, user)
 
     r = None
     streaming = False
@@ -1907,7 +1940,7 @@ async def responses(
         if model_id in models:
             idx = models[model_id]['urlIdx']
 
-    url, key, api_config = await get_openai_connection(idx)
+    url, key, api_config = await get_openai_connection(idx, user)
 
     payload['model'] = strip_provider_model_prefix(payload['model'], api_config.get('prefix_id'))
     body = JSONCodec.dumps(payload)
@@ -2025,7 +2058,7 @@ async def proxy(path: str, request: Request, user=Depends(get_verified_user)):
         if model_id in models:
             idx = models[model_id]['urlIdx']
 
-    url, key, api_config = await get_openai_connection(idx)
+    url, key, api_config = await get_openai_connection(idx, user)
     base_url = url
 
     r = None

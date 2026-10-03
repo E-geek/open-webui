@@ -4039,7 +4039,7 @@ async def background_tasks_handler(ctx):
             await review_memory_after_turn(
                 request=request,
                 user=user,
-                model=ctx['model'],
+                model=ctx.get('model') or (ctx.get('metadata') or {}).get('model'),
                 metadata=metadata,
                 form_data=form_data,
                 assistant_message=ctx.get('assistant_message') or {},
