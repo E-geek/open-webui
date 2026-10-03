@@ -1701,7 +1701,11 @@ async def delegate_task(
     __message_id__: str = None,
 ) -> str:
     """
-    Delegate focused work to a parallel sub-agent using the current model and tools.
+    Delegate a task and return the worker’s full output without passing it through a reporter.
+    Use this tool when you need the response as produced by the worker,
+    including details that a report might omit or rephrase.
+    If you need to customize the worker’s system prompt or receive a processed
+    report instead of the full output, use `delegate_advanced_task`.
 
     :param task: The specific task for the sub-agent to complete
     :param context: Relevant context, decisions, or file paths for the task
@@ -1721,6 +1725,66 @@ async def delegate_task(
         task,
         context,
         background,
+        False,
+        None,
+        None,
+        file_ids=file_ids,
+        request=__request__,
+        user_data=__user__ or {},
+        metadata=__metadata__ or {},
+        parent_chat_id=__chat_id__ or '',
+        parent_message_id=__message_id__,
+    )
+
+async def delegate_advanced_task(
+    task: str,
+    context: str = '',
+    report_prompt: str | bool = True,
+    file_ids: list[str] | None = None,
+    max_output_len: int | None = None,
+    system_prompt: str | None = None,
+    background: bool = False,
+    __request__: Request = None,
+    __user__: dict = None,
+    __metadata__: dict = None,
+    __chat_id__: str = None,
+    __message_id__: str = None,
+) -> str:
+    """
+    Delegate a task with optional execution settings and return a report of the worker’s output.
+    Use this tool when you need to customize the worker’s system prompt,
+    set a maximum report length, or specify what the final report should contain.
+    The worker’s output is **always processed by a reporter**: `result_prompt=true` uses the default reporter,
+    while a string supplies custom instructions for the reporter.
+    The returned text is therefore **not guaranteed to reproduce the worker’s output verbatim**,
+    even if the reporter is instructed to copy it exactly.
+    If you need the worker’s output as-is, use `delegate_task`.
+
+    :param task: The specific task for the sub-agent to complete
+    :param context: Relevant context, decisions, or file paths for the task
+    :param report_prompt: `True` to use the default reporter, or a string containing instructions for the report.
+        `False` to skip reporting and return the worker’s output directly.
+    :param file_ids: Attached file IDs the sub-agent needs. Use this for images or files;
+        do not put file IDs only in context.
+    :param max_output_len: Optional maximum length of the returned report.
+    :param system_prompt: Optional custom system prompt for the delegated worker.
+    :param background: Return immediately and continue this chat when the sub-agent finishes
+    :return: Foreground result text, or a JSON dispatch handle for background work
+    """
+    if __request__ is None:
+        return 'Error: request context not available.'
+    if getattr(__request__.state, 'internal', False) is True:
+        return 'Error: sub-agents cannot delegate recursively.'
+
+    from open_webui.utils.subagents import delegate
+
+    return await delegate(
+        task,
+        context,
+        background,
+        report_prompt,
+        max_output_len,
+        system_prompt,
         file_ids=file_ids,
         request=__request__,
         user_data=__user__ or {},

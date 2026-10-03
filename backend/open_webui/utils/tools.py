@@ -52,6 +52,7 @@ from open_webui.tools.builtin import (
     create_calendar_event,
     create_tasks,
     delegate_task,
+    delegate_advanced_task,
     delete_automation,
     delete_calendar_event,
     delete_memory,
@@ -653,7 +654,7 @@ async def get_builtin_tools(
         and getattr(request.state, 'internal', False) is not True
         and getattr(request.state, 'direct', False) is not True
     ):
-        builtin_functions.extend([delegate_task, timer])
+        builtin_functions.extend([delegate_task, delegate_advanced_task, timer])
 
     # Add memory tools when memory is enabled and the model allows this builtin category.
     if (
@@ -787,7 +788,7 @@ async def get_builtin_tools(
         )
 
         spec = get_builtin_tool_spec(func)
-        if func.__name__ == 'delegate_task' and not config.get('subagents.background_enabled'):
+        if func.__name__ in ['delegate_task', 'delegate_advanced_task'] and not config.get('subagents.background_enabled'):
             parameters = spec.get('parameters', {})
             parameters.get('properties', {}).pop('background', None)
             if isinstance(parameters.get('required'), list):

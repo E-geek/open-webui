@@ -5711,11 +5711,11 @@ async def streaming_chat_response_handler(response, ctx):
                     delegate_calls = [
                         tool_call
                         for tool_call in response_tool_calls
-                        if tool_call.get('function', {}).get('name') == 'delegate_task'
+                        if tool_call.get('function', {}).get('name') in ['delegate_task', 'delegate_advanced_task']
                     ]
                     tool_results = {}
                     for tool_call in response_tool_calls:
-                        if tool_call.get('function', {}).get('name') != 'delegate_task':
+                        if tool_call.get('function', {}).get('name') not in ['delegate_task', 'delegate_advanced_task']:
                             tool_results[id(tool_call)] = await execute_tool_call(tool_call)
                     tool_results.update(
                         zip(
