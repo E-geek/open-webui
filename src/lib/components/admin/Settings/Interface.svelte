@@ -494,8 +494,8 @@
 				</AdminSettingField>
 
 				<AdminSettingField
-					label={$i18n.t('Web Search Generation Prompt')}
-					description={$i18n.t('For web-search query rewriting.')}
+					label={$i18n.t('settings.admin.interface.queryGenerationPrompt.label')}
+					description={$i18n.t('settings.admin.interface.webSearchGenerationPrompt.description')}
 				>
 					<Textarea
 						className={textareaClass}
@@ -505,37 +505,33 @@
 				</AdminSettingField>
 
 				<AdminSettingField
-				    label={$i18n.t('RAG Search Mode')}
-				    description={$i18n.t(
-                        `RAG_SEARCH_MODE: "redundant" (default) or "pointwise" <br/>
-                             - "redundant": All queries retrieve up to the global max docs (default behavior)  <br/>
-                             - "pointwise": The global max docs is divided by the number of queries (ceil), each query is limited to this value (+ overlap)`
-                    )}
+				    label={$i18n.t('settings.admin.interface.retrivalMode.label')}
+				    description={$i18n.t('settings.admin.interface.retrivalMode.description')}
                 >
                     <select
                         class="w-full rounded-lg py-2 px-4 text-sm bg-gray-50 dark:text-gray-300 dark:bg-gray-850 outline-hidden"
                         bind:value={taskConfig.RAG_SEARCH_MODE}
-                        placeholder={$i18n.t('Select a rag search mode')}
+                        placeholder={$i18n.t('settings.admin.interface.retrivalMode.select')}
                     >
                         <option value="redundant" selected={taskConfig.RAG_SEARCH_MODE !== 'pointwise'} class="bg-gray-100 dark:bg-gray-700">
-                            {$i18n.t('Redundant')}
-                            {$i18n.t('(default)')}
+                            {$i18n.t('settings.admin.interface.retrivalMode.option.redunant')}
+                            {$i18n.t('settings.admin.interface.retrivalMode.option.default')}
                         </option>
                         <option value="pointwise" selected={taskConfig.RAG_SEARCH_MODE === 'pointwise'} class="bg-gray-100 dark:bg-gray-700">
-                            {$i18n.t('Pointwise')}
+                            {$i18n.t('settings.admin.interface.retrivalMode.option.pintwise')}
                         </option>
                     </select>
 				</AdminSettingField>
 
 				<AdminSettingField
-				    label={$i18n.t('Overlap for pointwise mode')}
+				    label={$i18n.t('settings.admin.interface.retrivalMode.overlap.label')}
                 >
                     <input
                         type="number"
                         disabled={taskConfig.RAG_SEARCH_MODE !== 'pointwise'}
                         class="w-full rounded-lg py-2 px-4 text-sm bg-gray-50 dark:text-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed dark:bg-gray-850 outline-hidden"
                         bind:value={taskConfig.RAG_POINTWISE_OVERLAP}
-                        placeholder={$i18n.t('Overlap for pointwise mode')}
+                        placeholder={$i18n.t('settings.admin.interface.retrivalMode.overlap.placeholder')}
                     />
 				</AdminSettingField>
 

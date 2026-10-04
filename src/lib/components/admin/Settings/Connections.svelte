@@ -383,6 +383,22 @@
 					/>
 				</AdminSettingRow>
 
+                {#if connectionsConfig.ENABLE_DIRECT_CONNECTIONS}
+                    <AdminSettingRow
+                        label={$i18n.t('settings.admin.connections.directLikeUsual.label')}
+                        description={$i18n.t('settings.admin.connections.directLikeUsual.description')}
+                        let:labelId
+                    >
+                        <Switch
+                            bind:state={connectionsConfig.USE_DIRECT_LIKE_USUAL}
+                            on:change={async () => {
+                                updateConnectionsHandler();
+                            }}
+                            ariaLabelledbyId={labelId}
+                        />
+                    </AdminSettingRow>
+                {/if}
+
 				<AdminSettingRow
 					label={$i18n.t('settings.admin.connections.cacheBaseModelList.label')}
 					description={$i18n.t('settings.admin.connections.cacheBaseModelList.description')}
