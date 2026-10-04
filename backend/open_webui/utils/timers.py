@@ -20,6 +20,7 @@ from open_webui.tasks import has_active_tasks
 from open_webui.utils.auth import VERIFIED_USER_ROLES
 from open_webui.utils.json_codec import JSONCodec
 from open_webui.utils.misc import get_message_list
+from open_webui.models.config import Config
 from sqlalchemy import select
 from starlette.datastructures import Headers
 

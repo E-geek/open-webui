@@ -11,6 +11,7 @@ from open_webui.socket.main import get_event_call, get_event_emitter
 from open_webui.utils.middleware import process_tool_result
 from open_webui.utils.models import check_model_access, get_all_models
 from open_webui.utils.plugin import get_function_module_from_cache
+from open_webui.models.config import Config
 
 logging.basicConfig(stream=sys.stdout, level=GLOBAL_LOG_LEVEL)
 log = logging.getLogger(__name__)

@@ -12,6 +12,7 @@ from open_webui.env import BYPASS_MODEL_ACCESS_CONTROL, GLOBAL_LOG_LEVEL
 from open_webui.functions import generate_function_chat_completion
 from open_webui.models.models import Models
 from open_webui.models.users import UserModel
+from open_webui.models.config import Config
 from open_webui.routers.ollama import (
     generate_chat_completion as generate_ollama_chat_completion,
 )
