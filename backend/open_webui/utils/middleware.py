@@ -2389,6 +2389,7 @@ async def connect_mcp_server(
 
 
 async def process_chat_payload(request, form_data, user, metadata, model):
+    config_direct_like_usual = (await Config.get('direct.like.usual', False))
     # Ensure chat_id is always a string — external API clients may omit it.
     if not isinstance(metadata.get('chat_id'), str):
         metadata['chat_id'] = ''
@@ -2482,7 +2483,7 @@ async def process_chat_payload(request, form_data, user, metadata, model):
         form_data['messages'].append({'role': 'user', 'content': regeneration_prompt})
 
     if is_saved_chat_id(chat_id) and user_message_id:
-        if getattr(request.state, 'direct', False) and hasattr(request.state, 'model'):
+        if getattr(request.state, 'direct', False) and hasattr(request.state, 'model') and not config_direct_like_usual:
             compaction_models = {
                 **dict(request.app.state.MODELS.items()),
                 request.state.model['id']: request.state.model,
@@ -2553,7 +2554,7 @@ async def process_chat_payload(request, form_data, user, metadata, model):
     }
     # Initialize events to store additional event to be sent to the client
     # Initialize contexts and citation
-    if getattr(request.state, 'direct', False) and hasattr(request.state, 'model'):
+    if getattr(request.state, 'direct', False) and hasattr(request.state, 'model') and not config_direct_like_usual:
         models = {
             request.state.model['id']: request.state.model,
         }
@@ -5109,7 +5110,7 @@ async def streaming_chat_response_handler(response, ctx):
                                 )
 
                             if data:
-                                if 'event' in data and not getattr(request.state, 'direct', False):
+                                if 'event' in data and (not getattr(request.state, 'direct', False) or (await Config.get('direct.like.usual', False))):
                                     await event_emitter(data.get('event', {}))
 
                                 if 'selected_model_id' in data:

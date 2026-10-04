@@ -1127,7 +1127,7 @@ async def chat_completion(
         model_info = None
         fallback_model = None
         missing_base_model = False
-        if not model_item.get('direct', False):
+        if not model_item.get('direct', False) or (await Config.get('direct.like.usual', False)):
             if model_id not in request.app.state.MODELS:
                 raise Exception('Model not found')
 
@@ -2099,7 +2099,7 @@ async def chat_completed(request: Request, form_data: dict, user=Depends(get_ver
     try:
         model_item = form_data.pop('model_item', {})
 
-        if model_item.get('direct', False):
+        if model_item.get('direct', False) and not (await Config.get('direct.like.usual', False)):
             await _set_direct_model(request, model_item, user)
 
         return await chat_completed_handler(request, form_data, user)
@@ -2117,7 +2117,7 @@ async def chat_action(request: Request, action_id: str, form_data: dict, user=De
     try:
         model_item = form_data.pop('model_item', {})
 
-        if model_item.get('direct', False):
+        if model_item.get('direct', False) and not (await Config.get('direct.like.usual', False)):
             await _set_direct_model(request, model_item, user)
 
         return await chat_action_handler(request, action_id, form_data, user)

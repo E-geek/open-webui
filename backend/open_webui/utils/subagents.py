@@ -330,11 +330,11 @@ async def delegate(
         'features': features,
         'files': copy.deepcopy(metadata.get('files') or []),
         'variables': copy.deepcopy(metadata.get('variables') or {}),
-        'direct': bool(metadata.get('direct')),
+        'direct': bool(metadata.get('direct') and not (await Config.get('direct.like.usual', False))),
     }
     if not run.get('model_id'):
         return 'Error: model context is required.'
-    if run.get('direct'):
+    if run.get('direct') and not (await Config.get('direct.like.usual', False)):
         return 'Error: sub-agents are unavailable for direct connections.'
 
     if file_ids:

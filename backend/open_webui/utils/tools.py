@@ -651,7 +651,7 @@ async def get_builtin_tools(
         is_builtin_tool_enabled('subagents')
         and config.get('subagents.enable')
         and getattr(request.state, 'internal', False) is not True
-        and getattr(request.state, 'direct', False) is not True
+        and (getattr(request.state, 'direct', False) is not True or (await Config.get('direct.like.usual', False)))
     ):
         builtin_functions.extend([delegate_task, delegate_advanced_task, timer])
 

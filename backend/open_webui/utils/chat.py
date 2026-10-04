@@ -171,7 +171,7 @@ async def generate_chat_completion(
                 **request.state.metadata,
             }
 
-    if getattr(request.state, 'direct', False) and hasattr(request.state, 'model'):
+    if getattr(request.state, 'direct', False) and hasattr(request.state, 'model') and not (await Config.get('direct.like.usual', False)):
         # Merge the direct connection model into server models so that
         # task functions (title, tags, etc.) can resolve a server-side
         # task model while still having the direct model available.
@@ -192,7 +192,7 @@ async def generate_chat_completion(
     if model is None:
         raise Exception('Model not found')
 
-    if getattr(request.state, 'direct', False) and model_id == getattr(request.state, 'model', {}).get('id'):
+    if getattr(request.state, 'direct', False) and model_id == getattr(request.state, 'model', {}).get('id') and not (await Config.get('direct.like.usual', False)):
         return await generate_direct_chat_completion(request, form_data, user=user, models=models)
     else:
         # Check if user has access to the model
@@ -312,7 +312,7 @@ async def chat_completed(request: Request, form_data: dict, user: Any):
     if not request.app.state.MODELS:
         await get_all_models(request, user=user)
 
-    if getattr(request.state, 'direct', False) and hasattr(request.state, 'model'):
+    if getattr(request.state, 'direct', False) and hasattr(request.state, 'model') and not (await Config.get('direct.like.usual', False)):
         models = {
             **dict(request.app.state.MODELS.items()),
             request.state.model['id']: request.state.model,

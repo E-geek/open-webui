@@ -53,7 +53,7 @@ async def generate_embeddings(
             }
 
     # If "direct" flag present, use only that model
-    if getattr(request.state, 'direct', False) and hasattr(request.state, 'model'):
+    if getattr(request.state, 'direct', False) and hasattr(request.state, 'model') and not (await Config.get('direct.like.usual', False)):
         models = {
             request.state.model['id']: request.state.model,
         }
@@ -66,7 +66,7 @@ async def generate_embeddings(
     model = models[model_id]
 
     # Access filtering
-    if not getattr(request.state, 'direct', False):
+    if not getattr(request.state, 'direct', False) or (await Config.get('direct.like.usual', False)):
         if not bypass_filter and user.role == 'user':
             await check_model_access(user, model)
 
